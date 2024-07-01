@@ -14,6 +14,9 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
+  # Kernel settings.
+  boot.kernel.sysctl."vm.swappiness" = 10;
+
   networking.hostName = "nixos"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
@@ -45,14 +48,27 @@
   # Enable the X11 windowing system.
   services.xserver.enable = true;
 
+  # Enable and configure proprietary Nvidia drivers.
+  services.xserver.videoDrivers = ["nvidia"];
+
+  hardware.nvidia = {
+    modesetting.enable = true;
+    #powerManagement.enable = false;
+    nvidiaSettings = true;
+    package = config.boot.kernelPackages.nvidiaPackages.stable;
+  };
+
+  # Enable OpenGL
+  hardware.opengl.enable = true;
+
   # Enable the GNOME Desktop Environment.
   services.xserver.displayManager.gdm.enable = true;
   services.xserver.desktopManager.gnome.enable = true;
 
   # Configure keymap in X11
-  services.xserver = {
+  services.xserver.xkb = {
     layout = "us";
-    xkbVariant = "";
+    variant = "";
   };
 
   # Enable CUPS to print documents.
@@ -97,9 +113,11 @@
   # $ nix search wget
   environment.systemPackages = with pkgs; [
     pkgs.microsoft-edge
-    vscode.fhs
+  # vscode.fhs
+    pkgs.vscodium
     wget
     git
+    htop
   # vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
   ];
 
