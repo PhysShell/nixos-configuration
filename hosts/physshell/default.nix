@@ -103,11 +103,22 @@
     ];
   };
 
-  # Install firefox.
+  # Disabled install firefox.
   programs.firefox.enable = false;
+
+  # Install Steam
+  programs.steam = {
+    enable = true;
+    remotePlay.openFirewall = true; # Open ports in the firewall for Steam Remote Play
+    dedicatedServer.openFirewall = true; # Open ports in the firewall for Source Dedicated Server
+    localNetworkGameTransfers.openFirewall = false; # Open ports in the firewall for Steam Local Network Game Transfers
+  };
 
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
+
+  # Enable flakes
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
@@ -120,6 +131,8 @@
     htop
   # vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
   ];
+
+
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
