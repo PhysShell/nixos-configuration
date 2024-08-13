@@ -1,21 +1,22 @@
 {
-  description = "Example Flake-based NixOS Configuration";
-
+  description = "Flake-based NixOS Configuration for WSL 2";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
-    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
-    dzgui-nix.url = "github:PhysShell/dzgui-nix";
+    nixos-wsl.url = "github:nix-community/NixOS-WSL/main";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, dzgui-nix, ... }:
+  outputs = { self, nixpkgs, nixos-wsl, ... }:
   {
     nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [
+	nixos-wsl.nixosModules.default
+	{
+	   system.stateVersion = "24.05";
+           wsl.enable = true;
+	}
         ./hosts/physshell
-        dzgui-nix.nixosModules.default 
-        { programs.dzgui.enable = true; }
       ];
     };
   };
