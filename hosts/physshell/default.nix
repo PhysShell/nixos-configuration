@@ -65,6 +65,9 @@
   services.xserver.displayManager.gdm.enable = true;
   services.xserver.desktopManager.gnome.enable = true;
 
+  # Disable wayland
+   services.xserver.displayManager.gdm.wayland = true;
+
   # Configure keymap in X11
   services.xserver.xkb = {
     layout = "us";
@@ -124,12 +127,25 @@
   # $ nix search wget
   environment.systemPackages = with pkgs; [
     pkgs.microsoft-edge
-  # vscode.fhs
+  #  pkgs.libGL
+  #  pkgs.libglvnd
+  #  pkgs.gnomeExtensions.brightness-control-using-ddcutil
+  #  vscode.fhs
     pkgs.vscodium
     wget
     git
     htop
+  #  ddcutil
   # vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+    (lutris.override {
+	extraPkgs = pkgs: [
+  	  ];
+	extraLibraries = pkgs: [
+	  ];
+    })
+    wineWowPackages.stable
+    winetricks
+    transmission_4-gtk
   ];
 
 
