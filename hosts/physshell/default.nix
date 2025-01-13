@@ -8,11 +8,14 @@
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
+      # Virtualisation support for Windows on NixOS	
+      # ./modules/virtualisation.nix
     ];
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+  # boot.loader.grub.efiSupport = true; 
 
   # Kernel settings.
   boot.kernel.sysctl."vm.swappiness" = 10;
@@ -53,6 +56,7 @@
     #powerManagement.enable = false;
     nvidiaSettings = true;
     package = config.boot.kernelPackages.nvidiaPackages.stable;
+    open = true;
   };
 
   # Enable OpenGL
