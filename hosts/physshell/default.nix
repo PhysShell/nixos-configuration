@@ -15,6 +15,11 @@
   boot.loader.efi.canTouchEfiVariables = true;
   # boot.loader.grub.efiSupport = true; 
 
+  # Enable nVidia resume from suspend
+  # boot.extraModprobeConfig = ''
+  #  options nvidia NVreg_PreserveVideoMemoryAllocations=1 NVreg_TemporaryFilePath=/var/tmp
+  # '';
+
   # Kernel settings.
   boot.kernel.sysctl."vm.swappiness" = 10;
 
@@ -24,6 +29,8 @@
   # Enable networking
   networking.networkmanager.enable = true;
   networking.firewall.checkReversePath = false;
+ # networking.firewall.allowedTCPPorts = [ 7070 ];
+
 
   # Set your time zone.
   time.timeZone = "Asia/Almaty";
@@ -44,7 +51,7 @@
   };
 
   # Enable the X11 windowing system.
-  # services.xserver.enable = true;
+  services.xserver.enable = true;
 
   # Enable and configure proprietary Nvidia drivers.
   services.xserver.videoDrivers = ["nvidia"];
@@ -64,17 +71,18 @@
   # services.xserver.displayManager.gdm.enable = true;
   # services.xserver.desktopManager.gnome.enable = true;
 
-  # Enable KDE
+  # Enable Plasma DE
   services.displayManager.sddm.enable = true;
   services.xserver.desktopManager.plasma5.enable = true;
 
   # Wayland
-  services.displayManager.sddm.wayland.enable = true;
+  services.displayManager.sddm.wayland.enable = false;
 
   # Configure keymap in X11
   services.xserver.xkb = {
-    layout = "us";
+    layout = "us,ru";
     variant = "";
+    options = "grp:win_space_toggle";
   };
 
   # Enable CUPS to print documents.
@@ -103,7 +111,7 @@
   users.users.physshell = {
     isNormalUser = true;
     description = "PhysShell";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [ "networkmanager" "wheel" "kvm" "adbuser" ];
     packages = with pkgs; [
     #  thunderbird
     ];
@@ -111,7 +119,7 @@
 
   # Disabled install firefox.
   programs.firefox.enable = false;
-
+  
   # Install Steam
   programs.steam = {
     enable = true;
@@ -133,8 +141,9 @@
   #  pkgs.libGL
   #  pkgs.libglvnd
   #  pkgs.gnomeExtensions.brightness-control-using-ddcutil
-  #  vscode.fhs
-    pkgs.vscodium
+    vscode.fhs
+    code-cursor
+  # pkgs.vscodium
     wget
     git
     htop
@@ -149,6 +158,7 @@
     wineWowPackages.stable
     winetricks
     transmission_4-gtk
+    firefox
   ];
 
 

@@ -14,7 +14,7 @@
       system = "x86_64-linux";
       modules = [
         ./hosts/physshell
-	      ./hosts/physshell/modules/virtualisation.nix
+	./hosts/physshell/modules/virtualisation.nix
        # dzgui-nix.nixosModules.default 
        # { programs.dzgui.enable = true; }
       ];
