@@ -111,7 +111,7 @@
   users.users.physshell = {
     isNormalUser = true;
     description = "PhysShell";
-    extraGroups = [ "networkmanager" "wheel" "kvm" "adbuser" ];
+    extraGroups = [ "networkmanager" "wheel" "kvm" "adbusers" ];
     packages = with pkgs; [
     #  thunderbird
     ];
