@@ -2,7 +2,7 @@
   description = "Flake-based NixOS Configuration for WSL 2";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
     nixos-wsl.url = "github:nix-community/NixOS-WSL/main";
   };
 
@@ -13,7 +13,7 @@
       modules = [
 	nixos-wsl.nixosModules.default
 	{
-	   system.stateVersion = "24.05";
+	   system.stateVersion = "24.11";
            wsl.enable = true;
 	}
         ./hosts/physshell
