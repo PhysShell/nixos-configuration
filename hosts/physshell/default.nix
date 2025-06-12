@@ -42,53 +42,32 @@
   };
 };
 
+security.wrappers = {
+  docker-rootlesskit = {
+    owner = "root";
+    group = "root";
+    capabilities = "cap_net_bind_service+ep";
+    source = "${pkgs.rootlesskit}/bin/rootlesskit";
+  };
+};
+
+  # boot.kernel.sysctl = {
+  #   "net.ipv4.ip_unprivileged_port_start" = 0;
+  # };
+
+  security.pki.certificateFiles = [
+    ./localhost.pem
+  ];
   
   # To be able to run devcontainer from WSL
   systemd.tmpfiles.rules = [
-    # L+: force-create symlink (обновит, если уже есть)
+    # Should be fixed in https://github.com/nix-community/NixOS-WSL/issues/555 but cursor screws up without it
     "L+  /usr/bin  -  -  -  -  /run/current-system/sw/bin"
   ];
-
-  # Experimental and broken below...
-  # Создать симлинки этих пакетов в «классических» /bin и /usr/bin
-  #environment.pathsToLink = [ "/bin" "/usr/bin" ];
-
-  #environment.extraOutputsToInstall = [ "bin" ];  # ← включает /bin/...
-  #environment.sessionVariables.PATH = [ "/run/current-system/sw/bin" ] ;
-
-  # Передаём PATH в non-login shell WSL
-  #environment.shellInit = ''
-  #  export PATH="/run/current-system/sw/bin:$PATH"
-  #'';
-
-  #environment.variables = {
-    # lib.mkForce → «моя запись выигрывает», но при этом мы сохраняем
-    # то, что уже было ($PATH), и прибавляем нужный каталог.
-   # PATH = lib.mkForce "$PATH:/run/current-system/sw/bin";
-  #};
 
   users.users.nixos.extraGroups = [ "docker" ];
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
-
-  # Some programs need SUID wrappers, can be configured further or are
-  # started in user sessions.
-  # programs.mtr.enable = true;
-  # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
-  # };
-
-  # List services that you want to enable:
-
-  # Enable the OpenSSH daemon.
-  # services.openssh.enable = true;
-
-  # Open ports in the firewall.
-  # networking.firewall.allowedTCPPorts = [ ... ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
-  # Or disable the firewall altogether.
-  # networking.firewall.enable = false;
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
