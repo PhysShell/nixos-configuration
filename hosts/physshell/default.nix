@@ -73,7 +73,7 @@
 
   # Enable Plasma DE
   services.displayManager.sddm.enable = true;
-  services.xserver.desktopManager.plasma5.enable = true;
+  services.xserver.desktopManager.plasma6.enable = true;
 
   # Wayland
   services.displayManager.sddm.wayland.enable = false;
@@ -89,7 +89,7 @@
   services.printing.enable = true;
 
   # Enable sound with pipewire.
-  hardware.pulseaudio.enable = false;
+  services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
@@ -111,14 +111,13 @@
   users.users.physshell = {
     isNormalUser = true;
     description = "PhysShell";
-    extraGroups = [ "networkmanager" "wheel" "kvm" "adbusers" ];
+    extraGroups = [ "networkmanager" "wheel" "kvm" "adbusers" "docker" ];
     packages = with pkgs; [
     #  thunderbird
     ];
   };
 
-  # Disabled install firefox.
-  programs.firefox.enable = false;
+  programs.firefox.enable = true;
   
   # Install Steam
   programs.steam = {
@@ -158,10 +157,40 @@
     wineWowPackages.stable
     winetricks
     transmission_4-gtk
-    firefox
   ];
 
+  virtualisation.docker = {
+    # Consider disabling the system wide Docker daemon
+    enable = false;
 
+    rootless = {
+      enable = true;
+      setSocketVariable = true;
+      # Optionally customize rootless Docker daemon settings
+      daemon.settings = {
+        dns = [ "1.1.1.1" "8.8.8.8" ];
+        registry-mirrors = [ "https://mirror.gcr.io" ];
+      };
+    };
+  };
+
+
+  security.wrappers = {
+  docker-rootlesskit = {
+    owner = "root";
+    group = "root";
+    capabilities = "cap_net_bind_service+ep";
+    source = "${pkgs.rootlesskit}/bin/rootlesskit";
+  };
+};
+
+  # boot.kernel.sysctl = {
+  #   "net.ipv4.ip_unprivileged_port_start" = 0;
+  # };
+
+  security.pki.certificateFiles = [
+    ./localhost.pem
+  ];
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
@@ -188,6 +217,6 @@
   # this value at the release version of the first install of this system.
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-  system.stateVersion = "24.05"; # Did you read the comment?
+  system.stateVersion = "25.05"; # Did you read the comment?
 
 }
