@@ -1,21 +1,83 @@
 {
-  description = "Flake-based NixOS Configuration";
-
+  description = "Flake-based NixOS Configuration with home-manager";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
-    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    agenix = {
+      url = "github:ryantm/agenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, ... }:
+  outputs = inputs@{ self, nixpkgs, home-manager, agenix, ... }:
+  let
+    system = "x86_64-linux";
+    lib = nixpkgs.lib;
+
+    # Function to allow unfree packages
+    unfreeNames = [
+      "nvidia-x11" "nvidia-settings"
+      "steam" "steam-unwrapped"
+      "code" "vscode" "cursor" "microsoft-edge"
+    ];
+
+    allowUnfree = pkg: builtins.elem (lib.getName pkg) unfreeNames;
+
+    hmPkgs = import nixpkgs {
+      inherit system;
+      config.allowUnfreePredicate = allowUnfree;
+    };
+  in
   {
     nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
+      inherit system;
+
+      # прокинем функцию в модули, если захотите её использовать внутри configuration.nix
+      specialArgs = { inherit allowUnfree inputs; };
+
       modules = [
-        ./hosts/physshell
-	./hosts/physshell/modules/virtualisation.nix
+        ./hosts/physshell/configuration.nix
+
+        # System-wide allowUnfree
+        ({ ... }: { nixpkgs.config.allowUnfreePredicate = allowUnfree; })
+
+        ./modules/maintenance.nix
+        ({ ... }: { maintenance.enable = true; }) # Enable maintenance module with defaults
+
+        home-manager.nixosModules.home-manager {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+          home-manager.backupFileExtension = "bkp";
+
+          home-manager.users.physshell = {
+            imports = [
+              agenix.homeManagerModules.default
+              ./hosts/physshell/home.nix
+              ./modules/hm-maintenance.nix
+              ({ ... }: { hmMaintenance.enable = true; })
+            ];
+          };
+        }
       ];
+    };
+
+    # Being able to build HM config separately is useful for testing
+    # and for using `home-manager switch` without rebuilding the whole system.
+    homeConfigurations.physshell = home-manager.lib.homeManagerConfiguration {
+      pkgs = hmPkgs;
+      modules = [
+        agenix.homeManagerModules.default
+        ./hosts/physshell/home.nix
+        ./modules/hm-maintenance.nix
+        ({ ... }: { hmMaintenance.enable = true; })
+      ];
+      # extraSpecialArgs = { inherit allowUnfree; }; # если нужно внутрь home.nix
     };
   };
 }
-

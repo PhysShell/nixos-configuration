@@ -8,6 +8,7 @@
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
+      ./modules/virtualisation.nix
     ];
 
   # Bootloader.
@@ -65,7 +66,10 @@
   };
 
   # Enable OpenGL
-  hardware.graphics.enable = true;
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true;   # для Proton/старых игр
+  };
 
   # Enable the GNOME Desktop Environment.
   # services.xserver.displayManager.gdm.enable = true;
@@ -73,7 +77,7 @@
 
   # Enable Plasma DE
   services.displayManager.sddm.enable = true;
-  services.xserver.desktopManager.plasma6.enable = true;
+  services.desktopManager.plasma6.enable = true;
 
   # Wayland
   services.displayManager.sddm.wayland.enable = false;
@@ -112,14 +116,9 @@
     isNormalUser = true;
     description = "PhysShell";
     extraGroups = [ "networkmanager" "wheel" "kvm" "adbusers" "docker" ];
-    packages = with pkgs; [
-    #  thunderbird
-    ];
   };
-
-  programs.firefox.enable = true;
   
-  # Install Steam
+  # Install Steam (cannot be in home.nix becuase of firewall settings)
   programs.steam = {
     enable = true;
     remotePlay.openFirewall = true; # Open ports in the firewall for Steam Remote Play
@@ -127,37 +126,36 @@
     localNetworkGameTransfers.openFirewall = false; # Open ports in the firewall for Steam Local Network Game Transfers
   };
 
-  # Allow unfree packages
-  nixpkgs.config.allowUnfree = true;
-
-  # Enable flakes
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
-
+  # Moved to home.nix
+  # programs.firefox.enable = true;
   # List packages installed in system profile. To search, run:
   # $ nix search wget
-  environment.systemPackages = with pkgs; [
-    pkgs.microsoft-edge
+  #environment.systemPackages = with pkgs; [
+  #  pkgs.microsoft-edge
   #  pkgs.libGL
   #  pkgs.libglvnd
   #  pkgs.gnomeExtensions.brightness-control-using-ddcutil
-    vscode.fhs
-    code-cursor
+  #  vscode.fhs
+  #  code-cursor
   # pkgs.vscodium
-    wget
-    git
-    htop
+  #  wget
+  #  git
+  #  htop
   #  ddcutil
   # vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-    (lutris.override {
-	extraPkgs = pkgs: [
-  	  ];
-	extraLibraries = pkgs: [
-	  ];
-    })
-    wineWowPackages.stable
-    winetricks
-    transmission_4-gtk
-  ];
+  #  (lutris.override {
+	#extraPkgs = pkgs: [
+  #	  ];
+	#extraLibraries = pkgs: [
+	#  ];
+  #  })
+  #  wineWowPackages.stable
+  #  winetricks
+  #  transmission_4-gtk
+  #];
+
+  # Enable flakes
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   virtualisation.docker = {
     # Consider disabling the system wide Docker daemon
@@ -173,7 +171,6 @@
       };
     };
   };
-
 
   security.wrappers = {
   docker-rootlesskit = {
@@ -218,5 +215,4 @@
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "25.05"; # Did you read the comment?
-
 }
