@@ -1,0 +1,2 @@
+# Get commit info (for fetchFromGitHub): `nix run nixpkgs#nix-prefetch-git`, rev and hash here are of specific interest.
+# To not be bound to /etc/nixos directory one can store configuration in any non-root directory and execute nixos-rebuild with respect to that directory (`[physshell@nixos:~/Documents/nixos-configuration]$ sudo nixos-rebuild switch --flake .`). Might be simpler as root not required.

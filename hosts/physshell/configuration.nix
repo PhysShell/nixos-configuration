@@ -117,6 +117,9 @@
     description = "PhysShell";
     extraGroups = [ "networkmanager" "wheel" "kvm" "adbusers" "docker" ];
   };
+
+  programs.zsh.enable = true;
+  users.users.physshell.shell = pkgs.zsh;
   
   # Install Steam (cannot be in home.nix becuase of firewall settings)
   programs.steam = {

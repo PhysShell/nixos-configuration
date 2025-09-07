@@ -38,7 +38,6 @@
     nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
       inherit system;
 
-      # прокинем функцию в модули, если захотите её использовать внутри configuration.nix
       specialArgs = { inherit allowUnfree inputs; };
 
       modules = [
@@ -67,17 +66,19 @@
       ];
     };
 
+    # Upd: standalone home-manager configuration is kinda obscure now, I'll stick with NixOS module
+    # for simplicity. Leaving this here for reference.
     # Being able to build HM config separately is useful for testing
     # and for using `home-manager switch` without rebuilding the whole system.
-    homeConfigurations.physshell = home-manager.lib.homeManagerConfiguration {
-      pkgs = hmPkgs;
-      modules = [
-        agenix.homeManagerModules.default
-        ./hosts/physshell/home.nix
-        ./modules/hm-maintenance.nix
-        ({ ... }: { hmMaintenance.enable = true; })
-      ];
+    # homeConfigurations.physshell = home-manager.lib.homeManagerConfiguration {
+    #   pkgs = hmPkgs;
+    #   modules = [
+    #     agenix.homeManagerModules.default
+    #     ./hosts/physshell/home.nix
+    #     ./modules/hm-maintenance.nix
+    #     ({ ... }: { hmMaintenance.enable = true; })
+    #   ];
       # extraSpecialArgs = { inherit allowUnfree; }; # если нужно внутрь home.nix
-    };
+    # };
   };
 }
