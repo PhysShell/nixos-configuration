@@ -42,6 +42,7 @@ in
     delta
     gitui
     tree
+    curl
 
     # set JetBrainsMono Nerd Font in your Konsole profile
     pkgs.nerd-fonts.jetbrains-mono
@@ -143,10 +144,11 @@ in
   };
 
   # Auto-environments per folder (.envrc / flake) — run `direnv allow` once
-  # programs.direnv = {
-  #   enable = true;
-  #   nix-direnv.enable = true;
-  # };
+  programs.direnv = {
+    enable = true;
+    enableZshIntegration = true;
+    nix-direnv.enable = true;
+  };
 
   # History with search (replaces Ctrl-R with "smart" search)
   programs.atuin = {
@@ -169,6 +171,7 @@ in
     initContent = ''
       # zi() { cd "$(zoxide query -i)"; }
       bindkey -v
+      bindkey -M viins '^f' autosuggest-accept
     '';
 
     plugins = [
