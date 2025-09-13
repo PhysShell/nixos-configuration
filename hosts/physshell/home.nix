@@ -53,6 +53,8 @@ in
     (pkgs.writeShellScriptBin "mouse-middle-click" ''
       ${pkgs.xdotool}/bin/xdotool click 2
     '')
+
+    devenv
   ];
 
   # Keep Bash enabled — can always return with the `bash` command
