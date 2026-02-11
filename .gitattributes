@@ -1,0 +1,22 @@
+# Normalize text files to LF in the repository and working tree.
+* text=auto eol=lf
+
+# Never apply line-ending normalization to encrypted secrets.
+*.age -text
+
+# Keep common binary formats binary.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.xz binary
+
+# If Windows scripts are added later, keep CRLF for them.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
