@@ -41,9 +41,7 @@ sudo nixos-rebuild switch --flake .#physshell
 sudo nixos-rebuild switch --flake .#wsl
 ```
 
-## After cloning / adding nixos-wsl input
-
-The first time (or after adding the `nixos-wsl` input), update the lock file:
+## Update package sources
 
 ```bash
 nix flake lock
@@ -52,5 +50,4 @@ nix flake lock
 ## Tips
 
 - `nix run nixpkgs#nix-prefetch-git` — get commit info (`rev` + `hash`) for `fetchFromGitHub`.
-- Config can live outside `/etc/nixos`. Just run `nixos-rebuild switch --flake .` from the repo directory.
-- To not be bound to /etc/nixos directory one can store configuration in any non-root directory and execute nixos-rebuild with respect to that directory (`[physshell@nixos:~/Documents/nixos-configuration]$ sudo nixos-rebuild switch --flake .`). Might be simpler as root not required.
+- Config can live outside `/etc/nixos`. Just run `nixos-rebuild switch --flake .#[host]` from the repo directory.

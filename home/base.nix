@@ -35,14 +35,21 @@
   # ── Git ───────────────────────────────────────────────────────
   programs.git = {
     enable = true;
-    userName = "PhysShell";
-    userEmail = "mouse.kcsource@gmail.com";
-    delta.enable = true;
-    extraConfig = {
+    settings = {
+      user = {
+        name = "PhysShell";
+        email = "mouse.kcsource@gmail.com";
+      };
       pull.rebase = true;
       init.defaultBranch = "main";
       color.ui = "auto";
     };
+  };
+
+  # ── Delta (diff pager for git) ────────────────────────────────
+  programs.delta = {
+    enable = true;
+    enableGitIntegration = true;
   };
 
   # ── Starship prompt (bash + zsh) ─────────────────────────────
