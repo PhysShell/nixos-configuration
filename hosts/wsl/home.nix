@@ -12,5 +12,19 @@
   home.username = "nixos";
   home.homeDirectory = "/home/nixos";
 
+  services.ssh-agent.enable = true;
+
+  programs.ssh = {
+    matchBlocks = {
+      "github.com" = {
+        hostname = "github.com";
+        user = "git";
+        identityFile = [ "~/.ssh/id_ed25519_github_wsl" ];
+        identitiesOnly = true;
+        addKeysToAgent = "yes";
+      };
+    };
+  };
+
   home.stateVersion = "24.11";
 }
