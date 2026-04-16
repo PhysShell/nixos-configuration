@@ -24,6 +24,7 @@
     curl
 
     devenv
+    claude-code
   ];
 
   # ── Bash (always available as fallback) ───────────────────────
@@ -35,18 +36,16 @@
   # ── Git ───────────────────────────────────────────────────────
   programs.git = {
     enable = true;
+    signing.format = null;
     settings = {
-      user = {
-        name = "PhysShell";
-        email = "mouse.kcsource@gmail.com";
-      };
+      user.name = "PhysShell";
+      user.email = "mouse.kcsource@gmail.com";
       pull.rebase = true;
       init.defaultBranch = "main";
       color.ui = "auto";
     };
   };
 
-  # ── Delta (diff pager for git) ────────────────────────────────
   programs.delta = {
     enable = true;
     enableGitIntegration = true;
@@ -57,6 +56,8 @@
     enable = true;
     settings = {
       add_newline = false;
+      # /mnt/c (drvfs) in WSL can make git status slower than Starship's default timeout.
+      command_timeout = 5000;
       username = {
         style_user = "blue bold";
         style_root = "red bold";
@@ -132,7 +133,7 @@
           rev   = "f1d0d6f929d72749c7aa3535a98949bec5e516af";
           hash  = "sha256-LP5StJwATK4L0GqnL97ATfSNQYe54+E/9ursS8KRiJ8=";
         };
-        file = "zsh-shsh-shortcut-git.plugin.zsh";
+        file = "zsh-shortcut-git.plugin.zsh";
       }
     ];
   };

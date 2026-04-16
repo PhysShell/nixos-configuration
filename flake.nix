@@ -9,6 +9,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    claude-code = {
+      url = "github:sadjow/claude-code-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     agenix = {
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -20,10 +25,11 @@
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, home-manager, agenix, nixos-wsl, ... }:
+  outputs = inputs@{ self, nixpkgs, home-manager, claude-code, agenix, nixos-wsl, ... }:
   let
     system = "x86_64-linux";
     lib = nixpkgs.lib;
+    claudeOverlay = claude-code.overlays.default;
 
     # Whitelist of allowed unfree packages (used on the desktop host)
     unfreeNames = [
@@ -42,6 +48,9 @@
 
       modules = [
         ./hosts/physshell/configuration.nix
+
+        # Overlay adds pkgs.claude-code
+        ({ ... }: { nixpkgs.overlays = [ claudeOverlay ]; })
 
         # System-wide allowUnfree predicate
         ({ ... }: { nixpkgs.config.allowUnfreePredicate = allowUnfree; })
@@ -75,6 +84,9 @@
       modules = [
         nixos-wsl.nixosModules.default
         ./hosts/wsl/configuration.nix
+
+        # Overlay adds pkgs.claude-code
+        ({ ... }: { nixpkgs.overlays = [ claudeOverlay ]; })
 
         home-manager.nixosModules.home-manager {
           home-manager.useGlobalPkgs = true;
