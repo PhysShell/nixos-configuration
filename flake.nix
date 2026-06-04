@@ -36,6 +36,7 @@
       "nvidia-x11" "nvidia-settings"
       "steam" "steam-unwrapped"
       "code" "vscode" "cursor" "microsoft-edge"
+      "claude-code"
     ];
     allowUnfree = pkg: builtins.elem (lib.getName pkg) unfreeNames;
   in
