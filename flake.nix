@@ -86,6 +86,16 @@
         nixos-wsl.nixosModules.default
         ./hosts/wsl/configuration.nix
 
+        # System-wide allowUnfree predicate
+        ({ ... }: { nixpkgs.config.allowUnfreePredicate = allowUnfree; })
+
+        ./modules/maintenance.nix
+        ({ ... }: {
+          maintenance.enable = true;
+          maintenance.gc.enable = true;
+          maintenance.optimise.enable = true;
+        })
+
         # Overlay adds pkgs.claude-code
         ({ ... }: { nixpkgs.overlays = [ claudeOverlay ]; })
 
