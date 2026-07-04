@@ -7,16 +7,16 @@
   home.packages = with pkgs; [
     # Editors / browsers
     vscode.fhs
-    code-cursor
+    # code-cursor
     microsoft-edge
 
     # Gaming
-    (lutris.override {
-      extraPkgs = pkgs: [];
-      extraLibraries = pkgs: [];
-    })
-    wineWowPackages.stable
-    winetricks
+    # (lutris.override {
+    #   extraPkgs = pkgs: [];
+    #   extraLibraries = pkgs: [];
+    # })
+    # wineWow64Packages.stable
+    # winetricks
 
     transmission_4-gtk
 
@@ -34,7 +34,10 @@
     '')
   ];
 
-  programs.firefox.enable = true;
+  programs.firefox = {
+    enable = true;
+    configPath = ".mozilla/firefox";
+  };
 
   # User-level fontconfig
   fonts.fontconfig.enable = true;

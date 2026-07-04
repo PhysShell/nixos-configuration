@@ -30,17 +30,17 @@
     enable = true;
     enableDefaultConfig = false;
     includes = [ config.age.secrets.private_ssh_config.path ];
-    matchBlocks = {
+    settings = {
       "*" = {
-        identitiesOnly = true;
-        addKeysToAgent = "yes";
+        IdentitiesOnly = true;
+        AddKeysToAgent = "yes";
       };
       "github.com" = {
-        hostname = "github.com";
-        user = "git";
-        identityFile = [ "~/.ssh/id_ed25519_github_home_pc" ];
-        identitiesOnly = true;
-        addKeysToAgent = "yes";
+        HostName = "github.com";
+        User = "git";
+        IdentityFile = [ "~/.ssh/id_ed25519_github_home_pc" ];
+        IdentitiesOnly = true;
+        AddKeysToAgent = "yes";
       };
     };
   };

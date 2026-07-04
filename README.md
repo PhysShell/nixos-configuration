@@ -47,6 +47,24 @@ sudo nixos-rebuild switch --flake .#wsl
 nix flake lock
 ```
 
+## Tier 2 smoke test
+
+Use the helper script to test the VPS → WireGuard → home-exit chain layer by layer:
+
+```bash
+sudo -v
+VPS_SSH=root@your-vps \
+HOME_WG_IFACE=wg-vps \
+VPS_WG_IFACE=wg-vps \
+HOME_WG_IP=10.66.66.2 \
+VPS_WG_IP=10.66.66.1 \
+XRAY_SOCKS=127.0.0.1:10808 \
+./scripts/tier2-smoke.sh
+```
+
+If Xray traffic uses a policy-routing mark, add `ROUTE_MARK=0x66`.
+The initial `sudo -v` lets the script read local WireGuard handshake metadata without prompting mid-run.
+
 ## Tips
 
 - `nix run nixpkgs#nix-prefetch-git` — get commit info (`rev` + `hash`) for `fetchFromGitHub`.

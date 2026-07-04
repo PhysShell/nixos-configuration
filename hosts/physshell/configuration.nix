@@ -9,6 +9,7 @@
   imports = [
     ./hardware-configuration.nix
     ./modules/virtualisation.nix
+    ./modules/wireguard.nix
     ../../common/core.nix
     ../../common/docker.nix
   ];
@@ -22,6 +23,13 @@
   networking.hostName = "nixos";
   networking.networkmanager.enable = true;
   networking.firewall.checkReversePath = false;
+
+  services.tailscale = {
+    enable = true;
+    openFirewall = true;
+    useRoutingFeatures = "server";
+    extraSetFlags = [ "--advertise-exit-node" ];
+  };
 
   # ── Locale / Timezone ─────────────────────────────────────────
   time.timeZone = "Asia/Almaty";
@@ -90,17 +98,17 @@
   nix.settings.trusted-users = [ "root" "physshell" ];
 
   # ── Steam (needs system-level firewall rules) ─────────────────
-  programs.steam = {
-    enable = true;
-    remotePlay.openFirewall = true;
-    dedicatedServer.openFirewall = true;
-    localNetworkGameTransfers.openFirewall = false;
-  };
+  # programs.steam = {
+  #   enable = true;
+  #   remotePlay.openFirewall = true;
+  #   dedicatedServer.openFirewall = true;
+  #   localNetworkGameTransfers.openFirewall = false;
+  # };
 
   # ── Certificates ──────────────────────────────────────────────
-  security.pki.certificateFiles = [
-    ./localhost.pem
-  ];
+  # security.pki.certificateFiles = [
+  #   ./localhost.pem
+  # ];
 
   # ── Bluetooth ─────────────────────────────────────────────────
   hardware.bluetooth = {
@@ -108,7 +116,7 @@
     powerOnBoot = true;
     settings = {
       General = {
-        Experimental = true;
+        Experimental = false;
         FastConnectable = true;
       };
       Policy = {

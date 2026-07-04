@@ -15,13 +15,13 @@
   services.ssh-agent.enable = true;
 
   programs.ssh = {
-    matchBlocks = {
+    settings = {
       "github.com" = {
-        hostname = "github.com";
-        user = "git";
-        identityFile = [ "~/.ssh/id_ed25519_github_wsl" ];
-        identitiesOnly = true;
-        addKeysToAgent = "yes";
+        HostName = "github.com";
+        User = "git";
+        IdentityFile = [ "~/.ssh/id_ed25519_github_wsl" ];
+        IdentitiesOnly = true;
+        AddKeysToAgent = "yes";
       };
     };
   };

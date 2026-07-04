@@ -1,3 +1,7 @@
 result
 result-*
 hosts/physshell/secrets/*.txt
+vultr_vps_relay_china
+vultr_vps_relay_china.pub
+hetzner_relay
+hetzner_relay.pub
