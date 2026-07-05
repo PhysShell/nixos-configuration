@@ -3,6 +3,7 @@ set -u
 set -o pipefail
 
 IP_CHECK_URL="${IP_CHECK_URL:-https://ifconfig.co}"
+IP_CHECK_URLS="${IP_CHECK_URLS:-$IP_CHECK_URL https://api.ipify.org https://ipv4.icanhazip.com https://checkip.amazonaws.com}"
 TIMEOUT="${TIMEOUT:-10}"
 PING_COUNT="${PING_COUNT:-3}"
 PING_TIMEOUT="${PING_TIMEOUT:-3}"
@@ -27,6 +28,7 @@ Usage:
 Common variables:
   VPS_SSH          SSH target for the VPS, for example root@203.0.113.10
   SSH_OPTS         Extra ssh options, for example "-p 2222 -i ~/.ssh/vps"
+  SSH_MULTIPLEX    Reuse one SSH connection for remote checks, default: 1
   HOME_WG_IFACE    Home WireGuard interface name, default: wg-vps
   VPS_WG_IFACE     VPS WireGuard interface name, default: wg-vps
   HOME_WG_IP       Home tunnel IP, default: 10.66.66.2
@@ -34,6 +36,7 @@ Common variables:
   XRAY_SOCKS       SOCKS listener on the VPS, default: 127.0.0.1:10808
   EXPECT_HOME_IP   Expected residential public IPv4. Defaults to local curl result.
   ROUTE_MARK       Optional policy-routing fwmark to test, for example 0x66
+  IP_CHECK_URLS    Space-separated public IPv4 check URLs. Defaults to several fallbacks.
 
 Acceptance target:
   local curl        -> home IP
@@ -56,6 +59,24 @@ declare -a ssh_opts=()
 if [[ -n "$SSH_OPTS" ]]; then
   # shellcheck disable=SC2206
   ssh_opts=( $SSH_OPTS )
+fi
+
+ssh_control_dir=""
+cleanup_ssh_control() {
+  if [[ -n "$ssh_control_dir" ]]; then
+    ssh "${ssh_opts[@]}" -O exit "$VPS_SSH" >/dev/null 2>&1 || true
+    rm -rf "$ssh_control_dir"
+  fi
+}
+
+if [[ -n "$VPS_SSH" && "${SSH_MULTIPLEX:-1}" != "0" ]]; then
+  ssh_control_dir=$(mktemp -d "${TMPDIR:-/tmp}/tier2-smoke-ssh.XXXXXX")
+  ssh_opts+=(
+    -o ControlMaster=auto
+    -o ControlPersist=120
+    -o ControlPath="$ssh_control_dir/%C"
+  )
+  trap cleanup_ssh_control EXIT
 fi
 
 heading() {
@@ -110,15 +131,42 @@ remote_capture() {
 }
 
 local_public_ip() {
-  curl -4fsS --max-time "$TIMEOUT" "$IP_CHECK_URL" | tr -d '[:space:]'
+  local ip url
+
+  for url in $IP_CHECK_URLS; do
+    if ip=$(curl -4fsS --max-time "$TIMEOUT" "$url" 2>/dev/null | tr -d '[:space:]') && [[ -n "$ip" ]]; then
+      printf '%s' "$ip"
+      return 0
+    fi
+  done
+
+  return 1
 }
 
 remote_public_ip() {
-  remote_sh "curl -4fsS --max-time $(sq "$TIMEOUT") $(sq "$IP_CHECK_URL") | tr -d '[:space:]'"
+  local ip url
+
+  for url in $IP_CHECK_URLS; do
+    if ip=$(remote_sh "curl -4fsS --max-time $(sq "$TIMEOUT") $(sq "$url") 2>/dev/null | tr -d '[:space:]'" 2>/dev/null) && [[ -n "$ip" ]]; then
+      printf '%s' "$ip"
+      return 0
+    fi
+  done
+
+  return 1
 }
 
 remote_xray_public_ip() {
-  remote_sh "curl -4fsS --max-time $(sq "$TIMEOUT") -x $(sq "socks5h://$XRAY_SOCKS") $(sq "$IP_CHECK_URL") | tr -d '[:space:]'"
+  local ip url
+
+  for url in $IP_CHECK_URLS; do
+    if ip=$(remote_sh "curl -4fsS --max-time $(sq "$TIMEOUT") -x $(sq "socks5h://$XRAY_SOCKS") $(sq "$url") 2>/dev/null | tr -d '[:space:]'" 2>/dev/null) && [[ -n "$ip" ]]; then
+      printf '%s' "$ip"
+      return 0
+    fi
+  done
+
+  return 1
 }
 
 wg_show_local() {
@@ -209,6 +257,7 @@ printf 'VPS_WG_IP=%s\n' "$VPS_WG_IP"
 printf 'XRAY_SOCKS=%s\n' "$XRAY_SOCKS"
 printf 'ROUTE_MARK=%s\n' "${ROUTE_MARK:-<unset>}"
 printf 'IP_CHECK_URL=%s\n' "$IP_CHECK_URL"
+printf 'IP_CHECK_URLS=%s\n' "$IP_CHECK_URLS"
 
 heading "Local prerequisites"
 need curl || true
@@ -225,7 +274,7 @@ home_ip=$(local_public_ip 2>/dev/null || true)
 if [[ -n "$home_ip" ]]; then
   ok "local public IPv4: $home_ip"
 else
-  fail "cannot read local public IPv4 via $IP_CHECK_URL"
+  fail "cannot read local public IPv4 via IP_CHECK_URLS"
 fi
 
 expected_home_ip="${EXPECT_HOME_IP:-$home_ip}"
@@ -235,7 +284,7 @@ fi
 
 vps_ip=""
 if [[ -n "$VPS_SSH" ]]; then
-  vps_ip=$(remote_capture "curl -4fsS --max-time $(sq "$TIMEOUT") $(sq "$IP_CHECK_URL") | tr -d '[:space:]'" || true)
+  vps_ip=$(remote_public_ip || true)
   if [[ -n "$vps_ip" ]]; then
     ok "VPS normal public IPv4: $vps_ip"
     if [[ -n "$expected_home_ip" && "$vps_ip" == "$expected_home_ip" ]]; then
@@ -277,11 +326,23 @@ if [[ -n "$VPS_SSH" && -n "$ROUTE_MARK" ]]; then
   else
     fail "cannot evaluate marked route on VPS"
   fi
+
+  route6_result=$(remote_sh "ip -6 route get 2606:4700:4700::1111 mark $(sq "$ROUTE_MARK") 2>&1" 2>/dev/null || true)
+  if [[ -n "$route6_result" ]]; then
+    printf '%s\n' "$route6_result"
+    if [[ "$route6_result" == *"unreachable"* || "$route6_result" == *"Network is unreachable"* || "$route6_result" == *"No route to host"* ]]; then
+      ok "marked IPv6 traffic is blocked"
+    else
+      fail "marked IPv6 traffic is not blocked"
+    fi
+  else
+    fail "cannot evaluate marked IPv6 route on VPS"
+  fi
 fi
 
 heading "Xray through WG"
 if [[ -n "$VPS_SSH" ]]; then
-  xray_ip=$(remote_capture "curl -4fsS --max-time $(sq "$TIMEOUT") -x $(sq "socks5h://$XRAY_SOCKS") $(sq "$IP_CHECK_URL") | tr -d '[:space:]'" || true)
+  xray_ip=$(remote_xray_public_ip || true)
   if [[ -n "$xray_ip" ]]; then
     ok "VPS Xray SOCKS public IPv4: $xray_ip"
     if [[ -n "$expected_home_ip" && "$xray_ip" == "$expected_home_ip" ]]; then

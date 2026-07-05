@@ -39,8 +39,58 @@
       "claude-code"
     ];
     allowUnfree = pkg: builtins.elem (lib.getName pkg) unfreeNames;
+    pkgs = import nixpkgs {
+      inherit system;
+      config.allowUnfreePredicate = allowUnfree;
+    };
   in
   {
+    packages.${system}.route-probe = pkgs.writeShellApplication {
+      name = "route-probe";
+      runtimeInputs = with pkgs; [
+        coreutils
+        curl
+        globalping-cli
+        gnugrep
+        iputils
+        mtr
+        netcat-openbsd
+        openssh
+      ];
+      text = builtins.readFile ./scripts/route-probe.sh;
+    };
+
+    apps.${system}.route-probe = {
+      type = "app";
+      program = "${self.packages.${system}.route-probe}/bin/route-probe";
+    };
+
+    devShells.${system}.default = pkgs.mkShell {
+      packages = [
+        self.packages.${system}.route-probe
+      ] ++ (with pkgs; [
+        bind.dnsutils
+        curl
+        globalping-cli
+        gnused
+        iproute2
+        iputils
+        jq
+        mtr
+        netcat-openbsd
+        openssh
+        traceroute
+        wireguard-tools
+        xray
+      ]);
+
+      shellHook = ''
+        echo "route tools: route-probe, globalping, mtr, traceroute, wg, xray"
+        echo "try: nix develop -c ./scripts/reality-client.sh"
+        echo "try: nix run .#route-probe -- 66.245.220.84"
+      '';
+    };
+
     # ── Desktop (physical machine) ──────────────────────────────
     nixosConfigurations.physshell = nixpkgs.lib.nixosSystem {
       inherit system;

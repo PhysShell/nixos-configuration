@@ -3,11 +3,15 @@ set -euo pipefail
 
 VPS_SSH="${VPS_SSH:-root@66.245.220.84}"
 SSH_OPTS="${SSH_OPTS:--F /dev/null -i ./vultr_vps_relay_china -o IdentitiesOnly=yes}"
-SERVER_IP="${SERVER_IP:-66.245.220.84}"
+default_server_ip=${VPS_SSH#*@}
+default_server_ip=${default_server_ip%%:*}
+SERVER_IP="${SERVER_IP:-$default_server_ip}"
 REALITY_SERVER_NAME="${REALITY_SERVER_NAME:-www.yahoo.com}"
 LOCAL_SOCKS="${LOCAL_SOCKS:-127.0.0.1:20809}"
 IP_CHECK_URL="${IP_CHECK_URL:-https://ifconfig.co}"
-TEST_URLS="${TEST_URLS:-https://ifconfig.co http://ifconfig.co/ip https://icanhazip.com http://1.1.1.1/cdn-cgi/trace}"
+IP_CHECK_URLS="${IP_CHECK_URLS:-$IP_CHECK_URL https://api.ipify.org https://ipv4.icanhazip.com https://checkip.amazonaws.com}"
+TRACE_URLS="${TRACE_URLS:-https://1.1.1.1/cdn-cgi/trace}"
+EXPECT_HOME_IP="${EXPECT_HOME_IP:-}"
 XRAY_BIN="${XRAY_BIN:-}"
 
 declare -a ssh_opts=()
@@ -106,9 +110,38 @@ if ! kill -0 "$pid" 2>/dev/null; then
   exit 1
 fi
 
-for url in $TEST_URLS; do
-  printf '\n== curl %s ==\n' "$url"
-  curl -4fsS --max-time 12 -x "socks5h://$LOCAL_SOCKS" "$url" 2>&1 || true
+if [[ -z "$EXPECT_HOME_IP" ]]; then
+  for url in $IP_CHECK_URLS; do
+    if EXPECT_HOME_IP=$(curl -4fsS --max-time 12 "$url" 2>/dev/null | tr -d '[:space:]') && [[ -n "$EXPECT_HOME_IP" ]]; then
+      break
+    fi
+  done
+fi
+
+if [[ -n "$EXPECT_HOME_IP" ]]; then
+  printf '\n== expected home public IPv4 ==\n%s\n' "$EXPECT_HOME_IP"
+else
+  printf '\nwarn: cannot detect expected home public IPv4; set EXPECT_HOME_IP to enforce it\n' >&2
+fi
+
+for url in $IP_CHECK_URLS; do
+  printf '\n== proxy public IPv4 via %s ==\n' "$url"
+  ip=$(curl -4fsS --max-time 12 -x "socks5h://$LOCAL_SOCKS" "$url" 2>&1 | tr -d '[:space:]' || true)
+  if [[ -n "$ip" ]]; then
+    printf '%s\n' "$ip"
+    if [[ -n "$EXPECT_HOME_IP" && "$ip" == "$EXPECT_HOME_IP" ]]; then
+      printf 'ok: proxy egress matches expected home IP\n'
+    elif [[ -n "$EXPECT_HOME_IP" ]]; then
+      printf 'fail: proxy egress %s does not match expected home IP %s\n' "$ip" "$EXPECT_HOME_IP" >&2
+    fi
+  else
+    printf 'warn: empty response from %s\n' "$url" >&2
+  fi
+done
+
+for url in $TRACE_URLS; do
+  printf '\n== proxy trace %s ==\n' "$url"
+  curl -4fsSL --max-time 12 -x "socks5h://$LOCAL_SOCKS" "$url" 2>&1 || true
 done
 kill "$pid" 2>/dev/null || true
 wait "$pid" 2>/dev/null || true

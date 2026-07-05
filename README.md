@@ -49,6 +49,9 @@ nix flake lock
 
 ## Tier 2 smoke test
 
+For the full home residential exit relay runbook, see
+[`docs/home-exit-relay.md`](docs/home-exit-relay.md).
+
 Use the helper script to test the VPS → WireGuard → home-exit chain layer by layer:
 
 ```bash
@@ -64,6 +67,59 @@ XRAY_SOCKS=127.0.0.1:10808 \
 
 If Xray traffic uses a policy-routing mark, add `ROUTE_MARK=0x66`.
 The initial `sudo -v` lets the script read local WireGuard handshake metadata without prompting mid-run.
+
+## Desktop proxy client
+
+Start a local SOCKS5 client for app/browser proxy mode:
+
+```bash
+nix develop -c ./scripts/reality-client.sh
+```
+
+It listens on `127.0.0.1:20809` and forwards traffic through the Reality VPS and then the WireGuard home exit.
+
+Test from another terminal:
+
+```bash
+curl -x socks5h://127.0.0.1:20809 https://api.ipify.org
+```
+
+Point browser/app SOCKS5 settings at `127.0.0.1:20809`.
+
+## Route probing
+
+Enter the network toolbox:
+
+```bash
+nix develop
+```
+
+Probe candidate VPS routes from China and from the current local connection:
+
+```bash
+nix run .#route-probe -- <VPS_IPV4>
+```
+
+Useful knobs:
+
+```bash
+CHINA_SOURCES="China,China Telecom,China Unicom,China Mobile" \
+GLOBALPING_LIMIT=5 \
+RUN_MTR=1 \
+nix run .#route-probe -- <VPS_IPV4>
+```
+
+Set `CHINA_SOURCES=""` to skip China-side probes and only check the local or SSH legs.
+Set `IP_VERSION=6` or `IP_VERSION=both` to compare IPv6 routes for hosts that have IPv6.
+
+For the currently configured VPS, also test the return leg back home:
+
+```bash
+VPS_SSH=root@<VPS_IPV4> \
+SSH_OPTS="-F /dev/null -i ./vps_relay_key -o IdentitiesOnly=yes" \
+HOME_TARGET=<HOME_IPV4> \
+nix run .#route-probe -- <VPS_IPV4>
+```
 
 ## Tips
 

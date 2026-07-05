@@ -3,18 +3,23 @@ set -euo pipefail
 
 VPS_SSH="${VPS_SSH:-root@66.245.220.84}"
 SSH_OPTS="${SSH_OPTS:--F /dev/null -i ./vultr_vps_relay_china -o IdentitiesOnly=yes}"
-SERVER_IP="${SERVER_IP:-66.245.220.84}"
+default_server_ip=${VPS_SSH#*@}
+default_server_ip=${default_server_ip%%:*}
+SERVER_IP="${SERVER_IP:-$default_server_ip}"
 REALITY_SERVER_NAME="${REALITY_SERVER_NAME:-www.yahoo.com}"
 REALITY_TARGET="${REALITY_TARGET:-$REALITY_SERVER_NAME:443}"
 XRAY_CONFIG="${XRAY_CONFIG:-/usr/local/etc/xray/config.json}"
 MARK_DEC="${MARK_DEC:-102}"
+ROUTE_TABLE="${ROUTE_TABLE:-100}"
+ROUTE_PREF="${ROUTE_PREF:-10066}"
+PROFILE_NAME="${PROFILE_NAME:-relay-home-exit-yahoo}"
 
 declare -a ssh_opts=()
 # shellcheck disable=SC2206
 ssh_opts=( $SSH_OPTS )
 
 ssh "${ssh_opts[@]}" "$VPS_SSH" \
-  "SERVER_IP='$SERVER_IP' REALITY_SERVER_NAME='$REALITY_SERVER_NAME' REALITY_TARGET='$REALITY_TARGET' XRAY_CONFIG='$XRAY_CONFIG' MARK_DEC='$MARK_DEC' bash -s" <<'REMOTE'
+  "SERVER_IP='$SERVER_IP' REALITY_SERVER_NAME='$REALITY_SERVER_NAME' REALITY_TARGET='$REALITY_TARGET' XRAY_CONFIG='$XRAY_CONFIG' MARK_DEC='$MARK_DEC' ROUTE_TABLE='$ROUTE_TABLE' ROUTE_PREF='$ROUTE_PREF' PROFILE_NAME='$PROFILE_NAME' bash -s" <<'REMOTE'
 set -euo pipefail
 
 CRED_FILE=/root/vless-reality.env
@@ -62,10 +67,48 @@ REALITY_SERVER_NAME=$REALITY_SERVER_NAME
 EOF
 chmod 600 "$CRED_FILE"
 
+MARK_HEX=$(printf '0x%x' "$MARK_DEC")
+while ip -6 rule del pref "$ROUTE_PREF" 2>/dev/null; do :; done
+ip -6 rule add pref "$ROUTE_PREF" fwmark "$MARK_HEX" lookup "$ROUTE_TABLE"
+ip -6 route replace unreachable default table "$ROUTE_TABLE"
+
 cat > "$XRAY_CONFIG" <<EOF
 {
   "log": {
     "loglevel": "warning"
+  },
+  "dns": {
+    "servers": [ "10.66.66.2" ],
+    "queryStrategy": "UseIPv4"
+  },
+  "routing": {
+    "domainStrategy": "AsIs",
+    "rules": [
+      {
+        "type": "field",
+        "network": "tcp,udp",
+        "ip": [ "::/1", "8000::/1" ],
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "network": "tcp,udp",
+        "port": "853",
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "network": "udp",
+        "port": "443",
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "network": "tcp,udp",
+        "port": "53",
+        "outboundTag": "home-dns"
+      }
+    ]
   },
   "inbounds": [
     {
@@ -122,6 +165,22 @@ cat > "$XRAY_CONFIG" <<EOF
           "mark": $MARK_DEC
         }
       }
+    },
+    {
+      "tag": "home-dns",
+      "protocol": "freedom",
+      "settings": {
+        "redirect": "10.66.66.2:53"
+      },
+      "streamSettings": {
+        "sockopt": {
+          "mark": $MARK_DEC
+        }
+      }
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
     }
   ]
 }
@@ -138,17 +197,21 @@ for _ in $(seq 1 20); do
 done
 
 cat > "$CLIENT_FILE" <<EOF
-vless://$VLESS_UUID@$SERVER_IP:443?encryption=none&security=reality&sni=$REALITY_SERVER_NAME&fp=chrome&pbk=$REALITY_PUBLIC&sid=$SHORT_ID&type=tcp&spx=%2F#vultr-home-exit-yahoo
+vless://$VLESS_UUID@$SERVER_IP:443?encryption=none&security=reality&sni=$REALITY_SERVER_NAME&fp=chrome&pbk=$REALITY_PUBLIC&sid=$SHORT_ID&type=tcp&spx=%2F#$PROFILE_NAME
 EOF
 chmod 600 "$CLIENT_FILE"
 
 cat > "$CLIENT_RAW_FILE" <<EOF
-vless://$VLESS_UUID@$SERVER_IP:443?encryption=none&security=reality&sni=$REALITY_SERVER_NAME&fp=chrome&pbk=$REALITY_PUBLIC&sid=$SHORT_ID&type=raw&spx=%2F#vultr-home-exit-yahoo-raw
+vless://$VLESS_UUID@$SERVER_IP:443?encryption=none&security=reality&sni=$REALITY_SERVER_NAME&fp=chrome&pbk=$REALITY_PUBLIC&sid=$SHORT_ID&type=raw&spx=%2F#$PROFILE_NAME-raw
 EOF
 chmod 600 "$CLIENT_RAW_FILE"
 
 echo "== Xray listeners =="
 ss -ltnp | grep -E ':443|10808' || true
+echo "== Marked IPv6 route =="
+ip -6 rule show | grep "$ROUTE_PREF" || true
+ip -6 route show table "$ROUTE_TABLE" || true
+ip -6 route get 2606:4700:4700::1111 mark "$MARK_HEX" 2>&1 || true
 echo "== SOCKS smoke =="
 curl -4fsS --max-time 15 -x socks5h://127.0.0.1:10808 https://ifconfig.co || true
 echo "== Hiddify link =="
