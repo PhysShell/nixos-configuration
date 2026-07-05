@@ -44,7 +44,7 @@
 
     networking.nat = {
       enable = true;
-      externalInterface = "wlo1";
+      externalInterface = null;
       internalInterfaces = [ "wg-vps" ];
     };
 

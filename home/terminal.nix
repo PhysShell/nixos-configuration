@@ -123,19 +123,23 @@ in
     enableBashIntegration = true;
     enableZshIntegration = true;
     defaultCommand = "fd --type f";
-    fileWidgetCommand = "fd --type f";
-    changeDirWidgetCommand = "fd --type d";
-    changeDirWidgetOptions = [ "--preview 'tree -C {} | head -200'" ];
+    fileWidget = {
+      command = "fd --type f";
+      options = [
+        "--preview 'bat --style=numbers --color=always --line-range=:200 {} 2>/dev/null'"
+      ];
+    };
+    changeDirWidget = {
+      command = "fd --type d";
+      options = [ "--preview 'tree -C {} | head -200'" ];
+    };
     defaultOptions = [
       "--height=40%"
       "--layout=reverse"
       "--border"
       "--info=inline"
     ];
-    fileWidgetOptions = [
-      "--preview 'bat --style=numbers --color=always --line-range=:200 {} 2>/dev/null'"
-    ];
-    historyWidgetOptions = [
+    historyWidget.options = [
       "--sort"
       "--exact"
     ];
