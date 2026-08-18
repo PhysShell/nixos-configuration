@@ -11,6 +11,11 @@
   wsl.enable = true;
   wsl.defaultUser = "nixos";
 
+  # Explicitly register the binfmt_misc handler for Windows .exe files.
+  # Without it WSLInterop is registered racily at boot and running .exe
+  # from Linux intermittently fails with "Exec format error".
+  wsl.interop.register = true;
+
   # ── User ──────────────────────────────────────────────────────
   users.users.nixos = {
     isNormalUser = true;
@@ -18,6 +23,10 @@
     shell = pkgs.zsh;
     extraGroups = [ "docker" ];
   };
+
+  # devenv up передаёт nix настройку 'system'; она restricted, поэтому
+  # без trusted-users падает с "Failed to get drvPath from shell derivation".
+  nix.settings.trusted-users = [ "root" "nixos" ];
 
   # WSL is less restrictive about unfree
   nixpkgs.config.allowUnfree = true;
