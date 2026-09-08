@@ -146,6 +146,20 @@
           maintenance.optimise.enable = true;
         })
 
+        # nix.settings.min-free cannot help under WSL: it reads free space from
+        # the filesystem, and the filesystem is a growing VHDX that reports a
+        # terabyte free while the Windows volume behind it has gigabytes left.
+        # This guard asks Windows for the real number through interop instead.
+        ./modules/wsl-disk-guard.nix
+        ({ ... }: {
+          wslDiskGuard = {
+            enable = true;
+            hostDrive = "D";
+            freeThresholdGiB = 10;
+            compactTask = "CompactWslDisk";
+          };
+        })
+
         # Overlay adds pkgs.claude-code
         ({ ... }: { nixpkgs.overlays = [ claudeOverlay ]; })
 
