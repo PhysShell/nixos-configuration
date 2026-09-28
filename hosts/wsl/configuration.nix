@@ -28,6 +28,15 @@
   # без trusted-users падает с "Failed to get drvPath from shell derivation".
   nix.settings.trusted-users = [ "root" "nixos" ];
 
+  # Двоичный кэш qubix (PhysShell/qubix): его CI кладёт туда ядро
+  # appliance, которого нет в cache.nixos.org, и здесь оно скачивается
+  # вместо ~45 минут компиляции. extra-, чтобы cache.nixos.org и его
+  # ключ остались как есть.
+  nix.settings.extra-substituters = [ "https://physshell.cachix.org" ];
+  nix.settings.extra-trusted-public-keys = [
+    "physshell.cachix.org-1:JX0coz2i80gA+E0MVCbsvnT25VezCA5uw67JUaLiKyI="
+  ];
+
   # WSL is less restrictive about unfree
   nixpkgs.config.allowUnfree = true;
 
