@@ -5,6 +5,7 @@
   imports = [
     ../../common/core.nix
     ../../common/docker.nix
+    ./command-not-found.nix
   ];
 
   # ── WSL-specific ──────────────────────────────────────────────
