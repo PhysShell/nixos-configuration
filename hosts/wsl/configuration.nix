@@ -6,6 +6,7 @@
     ../../common/core.nix
     ../../common/docker.nix
     ./command-not-found.nix
+    ./memory.nix
   ];
 
   # ── WSL-specific ──────────────────────────────────────────────

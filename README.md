@@ -26,6 +26,7 @@ Unified multi-host flake system configuration.
     │   └── secrets/
     └── wsl/                          # WSL 2
         ├── configuration.nix         #   imports common/* + WSL-specific
+        ├── memory.nix                #   build limits, earlyoom, Docker on demand (docs/wsl-memory.md)
         └── home.nix                  #   imports home/base.nix (no desktop)
 ```
 
